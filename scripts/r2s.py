@@ -8,6 +8,7 @@ from pyne.dagmc import cell_materials, load
 from pyne.r2s import irradiation_setup, photon_sampling_setup
 from pyne.alara import photon_source_to_hdf5, photon_source_hdf5_to_mesh
 from pyne.mcnp import Meshtal
+import numpy as np
 
 config_filename = 'config.ini'
 alara_params_filename = 'alara_params.txt'
@@ -104,26 +105,47 @@ def step1():
     config = ConfigParser.ConfigParser()
     config.read(config_filename)
 
+    dg = config.get('step1','dg')
+    if not dg:
+        dg = np.load(dg)
+
     structured = config.getboolean('general', 'structured')
     meshtal = config.get('step1', 'meshtal')
     tally_num = config.getint('step1', 'tally_num')
     flux_tag = config.get('step1', 'flux_tag')
+    meshtal = Mesh(structured=True,mesh=meshtal)
+    
+    """
     if structured:
         meshtal = Meshtal(meshtal,
                         {tally_num: (flux_tag, flux_tag + '_err',
                                      flux_tag + '_total',
                                      flux_tag + '_err_total')},
                         meshes_have_mats=False)
+    """
     geom = config.get('step1', 'geom')
     reverse = config.getboolean('step1', 'reverse')
     num_rays = config.getint('step1', 'num_rays')
     grid = config.getboolean('step1', 'grid')
 
-    load(geom)
+    print ("Geometry loading....")
+#    load(geom)
+    print ("Geometry loaded....")
+    print ("Retrieving Material assignments ....")
     cell_mats = cell_materials(geom)
-    irradiation_setup(meshtal, cell_mats, alara_params_filename, tally_num,
-                      num_rays=num_rays, grid=grid, reverse=reverse)
-
+    print ("Material assignments retrieved ....")
+    print ("Irradiation setup ...")
+    if dg != None:
+        print ("Irradiation with w/o DG ....")
+        irradiation_setup(meshtal, cell_mats,alara_params_filename, 
+                          tally_num,num_rays=num_rays, grid=grid, flux_tag = flux_tag,
+                          reverse=reverse,dg=dg)
+    else:
+        print ("Irradiation with DG ....")
+        irradiation_setup(meshtal, cell_mats, alara_params_filename, 
+                          tally_num,num_rays=num_rays, grid=grid, flux_tag = flux_tag,
+                          reverse=reverse)
+    print ("Done.")
     # create a blank mesh for step 2:
     mesh = meshtal.tally[tally_num]
     ves = list(mesh.iter_ve())

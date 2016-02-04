@@ -14,7 +14,7 @@ def irradiation_setup(flux_mesh, cell_mats, alara_params, tally_num=4,
                       geom=None, num_rays=10, grid=False, flux_tag="n_flux",
                       fluxin="alara_fluxin", reverse=False,
                       alara_inp="alara_geom", alara_matlib="alara_matlib",
-                      output_mesh="r2s_step1.h5m", output_material=False):
+                      output_mesh="r2s_step1.h5m", output_material=False, **kwargs):
     """This function is used to setup the irradiation inputs after the first
     R2S transport step.
 
@@ -62,7 +62,16 @@ def irradiation_setup(flux_mesh, cell_mats, alara_params, tally_num=4,
     output_material : bool, optional
         If true, output mesh will have materials as determined by
         dagmc.discretize_geom()
+    dg : record array, optional, default = None                                               
+        The output of pyne.dagmc.discretize_geom(). Use this input option if                  
+        discretize_geom() has already been run, to avoid duplicating this                     
+        expensive step.  
     """
+    
+    # see if user has supplied a discretized geometry
+    dg = kwargs.get('dg', None)
+
+
     from pyne.dagmc import load, discretize_geom
     if geom is not None and isfile(geom):
         load(geom)
@@ -90,11 +99,16 @@ def irradiation_setup(flux_mesh, cell_mats, alara_params, tally_num=4,
         else:
             raise ValueError("meshtal argument not a Mesh object, Meshtal"
                              " object, MCNP meshtal file or meshtal.h5m file.")
-
-    if m.structured:
-        cell_fracs = discretize_geom(m, num_rays=num_rays, grid=grid)
+            
+    
+    # if user has not supplied dg results
+    if dg != None:
+        cell_fracs = dg
     else:
-        cell_fracs = discretize_geom(m)
+        if m.structured:
+            cell_fracs = discretize_geom(m, num_rays=num_rays, grid=grid)
+        else:
+            cell_fracs = discretize_geom(m)
 
     if output_material:
         m.cell_fracs_to_mats(cell_fracs, cell_mats)
