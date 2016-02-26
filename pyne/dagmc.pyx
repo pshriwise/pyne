@@ -637,6 +637,11 @@ def cell_material_assignments(hdf5):
     # is no material already assigned to the implicit complement volume.
     implicit_vol = find_implicit_complement()
     mat_assigns[implicit_vol] = "mat:Vacuum"
+
+    # manually add the implicit compliment
+    mat_assigns[5481] = "mat:Vacuum"                      
+    mat_assigns[4229] = "mat:Vacuum"                      
+    mat_assigns[2694] = "mat:Vacuum"
     
     # loop over all mesh_sets in model
     for mesh_set in mesh_sets:

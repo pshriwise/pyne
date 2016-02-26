@@ -114,12 +114,15 @@ def step1():
     meshtal = config.get('step1', 'meshtal')
     tally_num = config.getint('step1', 'tally_num')
     flux_tag = config.get('step1', 'flux_tag')
+    meshtal = Mesh(structured=True,mesh=meshtal)
+    """
     if structured:
         meshtal = Meshtal(meshtal,
                         {tally_num: (flux_tag, flux_tag + '_err',
                                      flux_tag + '_total',
                                      flux_tag + '_err_total')},
                         meshes_have_mats=False)
+    """
     geom = config.get('step1', 'geom')
     reverse = config.getboolean('step1', 'reverse')
     num_rays = config.getint('step1', 'num_rays')
@@ -127,7 +130,7 @@ def step1():
 
     load(geom)
     cell_mats = cell_materials(geom)
-    irradiation_setup(meshtal, cell_mats, alara_params_filename, tally_num,
+    irradiation_setup(meshtal, cell_mats, alara_params_filename, tally_num, flux_tag = flux_tag,
                       num_rays=num_rays, grid=grid, reverse=reverse)
 
     # create a blank mesh for step 2:
