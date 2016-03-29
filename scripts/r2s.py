@@ -151,7 +151,7 @@ def step2():
     structured = config.getboolean('general', 'structured')
     decay_times = config.get('step2', 'decay_times').split(',')
     output = config.get('step2', 'output')
-    tot_phtn_src_intensities = config.get('step2', 'tot_phtn_src_intensities')
+    tot_phtn_src_intensities = "tot_phtn_src_intensities"
     tag_name = "source_density"
 
     h5_file = 'phtn_src.h5'
