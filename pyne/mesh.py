@@ -15,6 +15,8 @@ try:
     from itaps import iMesh, iBase, iMeshExtensions
     from pymoab import core
     from pymoab.types import *
+    from pymoab import scd
+    from pymoab.hcoord import HomCoord
 except ImportError:
     warn("the PyTAPS optional dependency could not be imported. "
          "Some aspects of the mesh module may be incomplete.", QAWarning)
@@ -631,10 +633,12 @@ class Mesh(object):
         if mesh is None:
             self.mesh = iMesh.Mesh()
             self.pymoab_inst = core.Core()
+            self.pymoab_scd = scd.ScdInterface(self.pymoab_inst)
         elif isinstance(mesh, basestring):
             self.mesh = iMesh.Mesh()
             self.mesh.load(mesh)
             self.pymoab_inst = core.Core()
+            self.pymoab_scd = scd.ScdInterface(self.pymoab_inst)
             self.pymoab_inst.load_file(mesh)
         else: 
             self.mesh = mesh
@@ -657,14 +661,15 @@ class Mesh(object):
 
                 count = 0
 #                for ent_set in self.mesh.rootSet.getEntSets():
-                 for ent_set in self.pymoab_inst.get_entities_by_type(0,MBENTITYSET)
+                for ent_set, es in zip(self.mesh.rootSet.getEntSets(),self.pymoab_inst.get_entities_by_type(0,MBENTITYSET)):
                     try:
                         self.mesh.getTagHandle("BOX_DIMS")[ent_set]
-                        self.pymoab_inst.tag_get_data(box_tag, ent_set, exceptions = MB_TAG_NOT_FOUND)
+                        self.pymoab_inst.tag_get_data(box_tag, es, exceptions = (MB_TAG_NOT_FOUND,))
                     except iBase.TagNotFoundError:
                         pass
                     else:
                         self.structured_set = ent_set
+                        self.pm_structured_set = es
                         count += 1
 
                 if count == 0:
@@ -681,11 +686,26 @@ class Mesh(object):
                      extents, i=structured_coords[0], j=structured_coords[1],
                      k=structured_coords[2], create_set=True)
 
+                # need to construct explicit vertex locations
+                xyz = []
+                for i in structured_coords[0]:
+                    for j in structured_coords[1]:
+                        for k in structured_coords[2]:
+                            xyz.append(i)
+                            xyz.append(j)
+                            xyz.append(k)
+                self.structured_box = self.pymoab_scd.construct_box(HomCoord(extents[0:3]),
+                                                                    HomCoord(extents[3:6]),
+                                                                    xyz)
+                
+
             # From mesh and structured_set:
             elif not structured_coords and structured_set:
                 try:
                     self.mesh.getTagHandle("BOX_DIMS")[structured_set]
+                    self.pymoab_inst.tag_get_data(box_tag, es, exceptions = (MB_TAG_NOT_FOUND,))
                 except iBase.TagNotFoundError as e:
+                    print("Supplied entity set does not contain BOX_DIMS tag")
                     print("Supplied entity set does not contain BOX_DIMS tag")
                     raise e
 
@@ -699,6 +719,8 @@ class Mesh(object):
                                 "D. Structured entity set AND iMesh instance")
 
             self.dims = self.mesh.getTagHandle("BOX_DIMS")[self.structured_set]
+            self.box_tag = self.pymoab_inst.tag_get_handle("BOX_DIMS")
+
             self.vertex_dims = list(self.dims[0:3]) \
                                + [x + 1 for x in self.dims[3:6]]
  
