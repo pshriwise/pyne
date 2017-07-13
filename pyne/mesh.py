@@ -13,6 +13,8 @@ warn(__name__ + " is not yet QA compliant.", QAWarning)
 
 try:
     from itaps import iMesh, iBase, iMeshExtensions
+    from pymoab import core
+    from pymoab.types import *
 except ImportError:
     warn("the PyTAPS optional dependency could not be imported. "
          "Some aspects of the mesh module may be incomplete.", QAWarning)
@@ -628,11 +630,15 @@ class Mesh(object):
         """
         if mesh is None:
             self.mesh = iMesh.Mesh()
+            self.pymoab_inst = core.Core()
         elif isinstance(mesh, basestring):
             self.mesh = iMesh.Mesh()
             self.mesh.load(mesh)
-        else:
+            self.pymoab_inst = core.Core()
+            self.pymoab_inst.load_file(mesh)
+        else: 
             self.mesh = mesh
+            self.pymoab_inst = None
 
         self.structured = structured
 
@@ -643,14 +649,18 @@ class Mesh(object):
                and not structured_set:
                 try:
                     self.mesh.getTagHandle("BOX_DIMS")
+                    box_tag = self.pymoab_inst.tag_get_handle("BOX_DIMS")
                 except iBase.TagNotFoundError as e:
                     print("BOX_DIMS not found on iMesh instance")
+                    print("BOX_DIMS not found on PyMOAB instance")
                     raise e
 
                 count = 0
-                for ent_set in self.mesh.rootSet.getEntSets():
+#                for ent_set in self.mesh.rootSet.getEntSets():
+                 for ent_set in self.pymoab_inst.get_entities_by_type(0,MBENTITYSET)
                     try:
                         self.mesh.getTagHandle("BOX_DIMS")[ent_set]
+                        self.pymoab_inst.tag_get_data(box_tag, ent_set, exceptions = MB_TAG_NOT_FOUND)
                     except iBase.TagNotFoundError:
                         pass
                     else:
