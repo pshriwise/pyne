@@ -12,6 +12,11 @@ import tables as tb
 warn(__name__ + " is not yet QA compliant.", QAWarning)
 
 try:
+    from pymoab import core, types
+except:
+    from pymoab import core, types
+
+try:
     from itaps import iMesh, iBase, iMeshExtensions
     HAVE_PYTAPS = True
 except ImportError:
@@ -566,6 +571,118 @@ class MeshError(Exception):
     """
     pass
 
+
+class PMBMesh(object):
+    """This class houses an iMesh instance and contains methods for various mesh
+    operations. Special methods exploit the properties of structured mesh.
+
+    Attributes
+    ----------
+    mbmesh : pymoab instance
+    structured : bool
+        True for structured mesh.
+    structured_coords : list of lists
+        A list containing lists of x_points, y_points and z_points that make up
+        a structured mesh.
+    structured_ordering : str
+        A three character string denoting the iteration order of the mesh (e.g.
+        'xyz', meaning z changest fastest, then y, then x.)
+    """
+    
+    def __init__(self, input_mesh=None, structured=False,
+                 structured_coords=None, structured_set=None,
+                 structured_ordering='xyz', mats=()):
+        """Parameters
+        ----------
+        input_mesh : pymoab instance or str, optional
+            Either an pymoab instance or a file name of file containing an
+            iMesh instance.
+        structured : bool, optional
+            True for structured mesh.
+        structured_coords : list of lists, optional
+            A list containing lists of x_points, y_points and z_points
+            that make up a structured mesh.
+        structured_set : iMesh entity set handle, optional
+            A preexisting structured entity set on an iMesh instance with a
+            "BOX_DIMS" tag.
+        structured_ordering : str, optional
+            A three character string denoting the iteration order of the mesh
+            (e.g. 'xyz', meaning z changest fastest, then y, then x.)
+        mats : MaterialLibrary or dict or Materials or None, optional
+            This is a mapping of volume element handles to Material objects.
+            If mats is None, then no empty materials are created for the mesh.
+
+            Unstructured mesh instantiation:
+                 - From pymoab instance by specifying: <mesh>
+                 - From mesh file by specifying: <mesh_file>
+
+            Structured mesh instantiation:
+                - From pymoab instance with exactly 1 entity set (with BOX_DIMS
+                  tag) by specifying <mesh> and structured = True.
+                - From mesh file with exactly 1 entity set (with BOX_DIMS tag)
+                  by specifying <mesh_file> and structured = True.
+                - From an imesh instance with multiple entity sets by
+                  specifying <mesh>, <structured_set>, structured=True.
+                - From coordinates by specifying <structured_coords>,
+                  structured=True, and optional preexisting pymoab instance
+                  <mesh>
+
+            The "BOX_DIMS" tag on pymoab instances containing structured mesh is
+            a vector of floats it the following form:
+            [i_min, j_min, k_min, i_max, j_max, k_max]
+            where each value is a volume element index number. Typically volume
+            elements should be indexed from 0. The "BOX_DIMS" information is
+            stored in self.dims.
+
+        """
+        if input_mesh is None:
+            self.mesh = core.Core()
+        elif isinstance(input_mesh, basestring):
+            self.mesh = core.Core()
+            self.mesh.load_file(input_mesh)
+        else:
+            self.mesh = input_mesh
+
+        self.structured = structured
+
+        if self.structured:
+            self.structured_coords = structured_coords
+            self.structured_ordering = structured_ordering
+            if (mesh is not None) and not structured_coords \
+               and not structured_set:
+                try:
+                    self.mesh.tag_get_handle("BOX_DIMS")
+                except types.MB_TAG_NOT_FOUND as e:
+                    print("BOX_DIMS not found on pymoab instance")
+                    raise e
+
+                count = 0
+                for ent_set in self.mesh.get_entities_by_type(get_root_set(), types.MBENTITYSET):
+                    try:
+                        box_dims_tag = self.mesh.tag_get_handle("BOX_DIMS")
+                        self.mesh.tag_get_data(box_dims_tag, ent_set)
+                    except types.MB_TAG_NOT_FOUND:
+                        pass
+                    else:
+                        self.structured_set = ent_set
+                        count += 1
+
+                if count == 0:
+                    raise MeshError("Found no structured meshes in "
+                                    "file {0}".format(mesh))
+                elif count > 1:
+                    raise MeshError("Found {0} structured meshes."
+                                    " Instantiate individually using"
+                                    " from_ent_set()".format(count))
+                
+            # from coordinates
+            elif (mesh is None) and structured_coords and not structured_set:
+                extents = [0, 0, 0] + [len(x) - 1 for x in structured_coords]
+                self.structured_set = self.mesh.createStructuredMesh(
+                     extents, i=structured_coords[0], j=structured_coords[1],
+                     k=structured_coords[2], create_set=True)
+                self.scd = scd.ScdInterface(self.mesh)
+                
 
 class Mesh(object):
     """This class houses an iMesh instance and contains methods for various mesh

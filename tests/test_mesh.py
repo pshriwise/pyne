@@ -22,6 +22,9 @@ from pyne.mesh import Mesh, StatMesh, MeshError, Tag, MetadataTag, IMeshTag, \
     ComputedTag
 from pyne.material import Material, MaterialLibrary
 
+from pyne.mesh import PMBMesh
+from pymoab import core, types
+
 def try_rm_file(filename):
     return lambda: os.remove(filename) if os.path.exists(filename) else None
 
@@ -848,3 +851,12 @@ def test_no_mats():
     assert_true(mesh.mats is None)
     i, mat, ve = next(iter(mesh))
     assert_true(mat is None)
+
+def test_pymbmesh():
+    mesh = PMBMesh()
+    
+def test_pymbmesh_from_empty_instance():
+    filename = os.path.join(os.path.dirname(__file__),
+                            "files_mesh_test/unstr.h5m")
+    mesh = core.Core()
+    sm = PMBMesh(input_mesh=mesh)
