@@ -682,6 +682,34 @@ class PMBMesh(object):
                      extents, i=structured_coords[0], j=structured_coords[1],
                      k=structured_coords[2], create_set=True)
                 self.scd = scd.ScdInterface(self.mesh)
+            # From mesh and structured_set:
+            elif not structured_coords and structured_set:
+                try:
+                    box_dims_tag = self.mesh.tag_get_handle("BOX_DIMS")
+                    self.mesh.tag_get_data(box_dims_tag, structured_set)
+
+                except types.MB_TAG_NOT_FOUND as e:
+                    print("Supplied entity set does not contain BOX_DIMS tag")
+                    raise e
+
+                self.structured_set = structured_set
+            else:
+                raise MeshError("For structured mesh instantiation, need to"
+                                "supply exactly one of the following:\n"
+                                "A. iMesh instance\n"
+                                "B. Mesh file\n"
+                                "C. Mesh coordinates\n"
+                                "D. Structured entity set AND iMesh instance")
+
+            box_dims_tag = self.mesh.tag_get_handle("BOX_DIMS")
+            self.dims = self.mesh.tag_get_data(box_dims_tag, self.structured_set, flat = True)
+            self.vertex_dims = list(self.dims[0:3]) \
+                               + [x + 1 for x in self.dims[3:6]]
+
+            if self.structured_coords is None:
+                self.structured_coords = [self.structured_get_divisions("x"),
+                                          self.structured_get_divisions("y"),
+                                          self.structured_get_divisions("z")]
                 
 
 class Mesh(object):

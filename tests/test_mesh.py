@@ -860,3 +860,15 @@ def test_pymbmesh_from_empty_instance():
                             "files_mesh_test/unstr.h5m")
     mesh = core.Core()
     sm = PMBMesh(input_mesh=mesh)
+
+def test_unstructured_pymbmesh_from_file():
+    filename = os.path.join(os.path.dirname(__file__),
+                            "files_mesh_test/unstr.h5m")
+    sm = PMBMesh(input_mesh=filename)
+
+def test_unstructured_pymbmesh_from_instance():
+    filename = os.path.join(os.path.dirname(__file__),
+                            "files_mesh_test/unstr.h5m")
+    mesh = core.Core()
+    mesh.load_file(filename)
+    sm = PMBMesh(input_mesh=mesh)
