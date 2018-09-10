@@ -178,7 +178,7 @@ def total_photon_source_intensity(m, tag_name):
         The total photon emission density across the entire mesh (p/s).
     """
 
-    sd_tag = m.mesh.getTagHandle(tag_name)
+    sd_tag = m.get_tag(tag_name)
     intensity = 0.
     for idx, _, ve in m:
         vol = m.elem_volume(ve)
