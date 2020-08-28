@@ -45,8 +45,6 @@ void pyne::pyne_start() {
   return;
 }
 
-
-
 // String Transformations
 std::string pyne::to_str(int t) {
   std::stringstream ss;
@@ -170,7 +168,7 @@ std::string pyne::comment_line_wrapping(std::string line,
   std::ostringstream oss;
 
   line_length -= comment_prefix.length();
-    
+
   // Include as is if short enough
   while (line.length() > line_length) {
     oss << comment_prefix << line.substr(0, line_length) << std::endl;
@@ -306,7 +304,7 @@ std::vector<std::string> pyne::split_string(std::string particles_list, std::str
   std::vector<std::string> output_vector;
   size_t prev_pos = 0; //item start position
   size_t pos = 0; //item end position
- 
+
   while( (pos = particles_list.find(delimiter, prev_pos)) != std::string::npos){
     output_vector.push_back(particles_list.substr(prev_pos, pos));
     prev_pos = pos + delimiter.length();
@@ -317,27 +315,6 @@ std::vector<std::string> pyne::split_string(std::string particles_list, std::str
 
   return output_vector;
 }
-
-
-
-template<typename T>
-std::string pyne::join_to_string(std::vector<T> vect, std::string delimiter){
-  std::stringstream out;
-  out << std::setiosflags(std::ios::fixed) << std::setprecision(6);
-  
-  // ensure there is at least 1 element in the vector
-  if (vect.size() == 0)
-    return out.str();
-  // no delimiter needed before the first element
-  out << vect[0];
-  for( int i = 1; i < vect.size(); i++)
-    out << delimiter << vect[i];
-  return out.str();
-}
-template std::string pyne::join_to_string(std::vector<int> vect, std::string delimiter);
-template std::string pyne::join_to_string(std::vector<double> vect,
-                                 std::string delimiter);
-template std::string pyne::join_to_string(std::vector<std::string> vect, std::string delimiter);
 
 //
 // Math Helpers
@@ -424,7 +401,3 @@ void pyne::warning(std::string s){
     std::cout << "\033[1;33m WARNING: \033[0m" << s << "\n";
   }
 }
-
-
-
-
